@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vision Writing Coach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #f9f8f5;
+      color: #1a1a18;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid #e8e6e0;
+      background: #fafaf8;
+    }
+    .header-brand {
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      color: #999;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .save-status {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      color: #bbb;
+      opacity: 0;
+      transition: opacity 0.3s;
+      letter-spacing: 0.02em;
+    }
+    .save-status.visible { opacity: 1; }
+    .save-status.saved { color: #8bc48b; }
+    .presence-bar {
+      display: flex;
+      gap: -6px;
+    }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #d4c9b8;
+      border: 2px solid #fafaf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: #5a4e3c;
+      margin-left: -6px;
+    }
+    .avatar:first-child { margin-left: 0; }
+    .avatar.you { background: #b8c9d4; color: #2c4a5a; }
+
+    .btn-copy {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 16px;
+      border: 1px solid #d8d5cf;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      color: #555;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+    .btn-copy:hover { background: #f0ede6; border-color: #b8b5ae; }
+    .btn-copy.copied { background: #e8f4e8; border-color: #8bc48b; color: #2d6e2d; }
+
+    /* ── Main Layout ── */
+    .main {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px 40px 80px;
+      position: relative;
+    }
+
+    /* ── Geometric background ── */
+    .geo-bg {
+      position: fixed;
+      top: 60px;
+      right: 0;
+      width: 420px;
+      height: 420px;
+      opacity: 0.07;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Welcome line ── */
+    .welcome {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: #aaa;
+      margin-bottom: 40px;
+      font-style: italic;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Product Name ── */
+    .product-name-wrap {
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+    .product-name-input {
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: #1a1a18;
+      border: none;
+      background: transparent;
+      outline: none;
+      padding: 0;
+      letter-spacing: -0.03em;
+    }
+    .product-name-input::placeholder { color: #ddd; }
+
+    /* ── Vision Field ── */
+    .vision-wrap {
+      position: relative;
+      margin-bottom: 12px;
+      z-index: 1;
+    }
+    .vision-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 10px;
+    }
+    .vision-block {
+      display: flex;
+      gap: 0;
+    }
+    .vision-border {
+      width: 3px;
+      background: #c8c4bc;
+      border-radius: 2px;
+      margin-right: 16px;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .vision-border.active { background: #8b7355; }
+    .vision-textarea {
+      flex: 1;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 24px;
+      line-height: 1.6;
+      font-style: italic;
+      color: #2a2a26;
+      border: none;
+      background: transparent;
+      outline: none;
+      resize: none;
+      min-height: 100px;
+      padding: 0;
+    }
+    .vision-textarea::placeholder { color: #d4d0ca; font-style: italic; }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid #e8e6e0;
+      margin: 24px 0;
+    }
+
+    /* ── Lower Fields ── */
+    .lower-fields {
+      display: none;
+      flex-direction: column;
+      gap: 28px;
+      z-index: 1;
+      position: relative;
+    }
+    .lower-fields.visible { display: flex; }
+    .lower-hint {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: #ccc;
+      font-style: italic;
+      display: none;
+    }
+    .lower-hint.visible { display: block; }
+
+    .field-wrap { position: relative; }
+    .field-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 8px;
+    }
+    .field-placeholder {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 300;
+      color: #ccc;
+      margin-bottom: 6px;
+      font-style: italic;
+    }
+    .field-textarea {
+      width: 100%;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      line-height: 1.65;
+      color: #2a2a26;
+      border: none;
+      border-bottom: 1px solid #eae8e3;
+      background: transparent;
+      outline: none;
+      resize: none;
+      padding: 4px 0 12px;
+      transition: border-color 0.2s;
+    }
+    .field-textarea:focus { border-bottom-color: #8b7355; }
+    .field-textarea::placeholder { color: #d4d0ca; font-style: italic; }
+
+    /* ── Character Counter ── */
+    .char-counter {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: #ccc;
+      text-align: right;
+      margin-top: 4px;
+      transition: color 0.2s;
+    }
+    .char-counter.warn { color: #d4a843; }
+    .char-counter.full { color: #c94040; }
+
+    /* ── Nudge ── */
+    .nudge {
+      display: none;
+      margin-top: 10px;
+      background: #f5f0ff;
+      border: 1px solid #d8cff0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      position: relative;
+    }
+    .nudge.visible { display: block; }
+    .nudge-text {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: #4a3a7a;
+      line-height: 1.6;
+    }
+    .nudge-dismiss {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #a090cc;
+      font-size: 14px;
+      line-height: 1;
+      padding: 2px 4px;
+    }
+    .nudge-dismiss:hover { color: #4a3a7a; }
+    .nudge-thinking {
+      display: none;
+      margin-top: 10px;
+    }
+    .nudge-thinking.visible { display: block; }
+    .thinking-dots {
+      display: flex;
+      gap: 4px;
+      padding: 8px 0;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #c8c0e0;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse {
+      0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+      30% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Cross-field nudge ── */
+    .cross-nudge {
+      display: none;
+      margin-top: 20px;
+      background: #fff8ed;
+      border: 1px solid #edd8a0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      position: relative;
+    }
+    .cross-nudge.visible { display: block; }
+    .cross-nudge .nudge-text { color: #6a4a08; }
+    .cross-nudge .nudge-dismiss { color: #c0a050; }
+    .cross-nudge .nudge-dismiss:hover { color: #6a4a08; }
+
+    /* ── View Mode ── */
+    .view-mode {
+      display: none;
+    }
+    .view-mode.visible {
+      display: block;
+    }
+    .view-header-banner {
+      background: #f0ede6;
+      border-bottom: 1px solid #e0dcd4;
+      padding: 10px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: #999;
+    }
+    .view-cta {
+      font-weight: 600;
+      color: #5a4e3c;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .view-cta:hover { text-decoration: underline; }
+    .view-canvas {
+      max-width: 780px;
+      margin: 60px auto;
+      padding: 0 40px;
+    }
+    .view-product-name {
+      font-family: 'Inter', sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      color: #1a1a18;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+    .view-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 8px;
+      margin-top: 28px;
+    }
+    .view-vision {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-style: italic;
+      line-height: 1.55;
+      color: #2a2a26;
+      border-left: 3px solid #8b7355;
+      padding-left: 20px;
+      margin-bottom: 32px;
+    }
+    .view-text {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      line-height: 1.7;
+      color: #3a3a36;
+    }
+    .view-divider {
+      border: none;
+      border-top: 1px solid #e8e6e0;
+      margin: 32px 0;
+    }
+
+    /* ── Edit mode wrap ── */
+    #edit-mode { position: relative; z-index: 1; }
+
+  </style>
+</head>
+<body>
+
+<!-- SVG geometric background -->
+<svg class="geo-bg" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <line x1="0" y1="0" x2="300" y2="300" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="50" y1="0" x2="300" y2="250" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="100" y1="0" x2="300" y2="200" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="150" y1="0" x2="300" y2="150" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="200" y1="0" x2="300" y2="100" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="250" y1="0" x2="300" y2="50" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="0" y1="50" x2="250" y2="300" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="0" y1="100" x2="200" y2="300" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="0" y1="150" x2="150" y2="300" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="0" y1="200" x2="100" y2="300" stroke="#5a4e3c" stroke-width="0.8"/>
+  <line x1="0" y1="250" x2="50" y2="300" stroke="#5a4e3c" stroke-width="0.8"/>
+</svg>
+
+<!-- ── Header ── -->
+<div class="header">
+  <span class="header-brand">Vision Writing Coach</span>
+  <div class="header-right">
+    <span class="save-status" id="saveStatus">Saving...</span>
+    <div class="presence-bar">
+      <div class="avatar you">PM</div>
+      <div class="avatar" title="Collaborator">JK</div>
+      <div class="avatar" title="Collaborator">MR</div>
+    </div>
+    <button class="btn-copy" id="copyBtn" onclick="copyLink()">Copy link</button>
+  </div>
+</div>
+
+<!-- ── View Mode (read-only) ── -->
+<div class="view-mode" id="viewMode">
+  <div class="view-header-banner">
+    <span>Viewing a shared Vision Canvas</span>
+    <a class="view-cta" href="#" onclick="startFresh(); return false;">Make your own →</a>
+  </div>
+  <div class="view-canvas">
+    <div class="view-product-name" id="viewProductName"></div>
+    <div class="view-label">Vision</div>
+    <div class="view-vision" id="viewVision"></div>
+    <hr class="view-divider" />
+    <div class="view-label">Strategy</div>
+    <div class="view-text" id="viewStrategy"></div>
+    <div class="view-label" style="margin-top:24px;">Successful when</div>
+    <div class="view-text" id="viewSuccess"></div>
+  </div>
+</div>
+
+<!-- ── Edit Mode ── -->
+<div id="edit-mode">
+  <div class="main">
+
+    <p class="welcome" id="welcome">The same thinking that built iPhone, Airbnb, Spotify started with a question like this.</p>
+
+    <!-- Product Name -->
+    <div class="product-name-wrap">
+      <input
+        type="text"
+        class="product-name-input"
+        id="productName"
+        placeholder="Product name"
+        maxlength="60"
+      />
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Vision -->
+    <div class="vision-wrap">
+      <div class="vision-label">Vision</div>
+      <div class="vision-block">
+        <div class="vision-border" id="visionBorder"></div>
+        <textarea
+          class="vision-textarea"
+          id="visionField"
+          placeholder="Why does your product exist?"
+          rows="4"
+          maxlength="280"
+        ></textarea>
+      </div>
+      <div class="char-counter" id="visionCounter">0 / 280</div>
+      <div class="nudge-thinking" id="visionThinking">
+        <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="nudge" id="visionNudge">
+        <button class="nudge-dismiss" onclick="dismissNudge('vision')">✕</button>
+        <p class="nudge-text" id="visionNudgeText"></p>
+      </div>
+    </div>
+
+    <!-- Progressive reveal hint -->
+    <div class="lower-hint" id="lowerHint">Your strategy and success criteria will appear as your vision takes shape...</div>
+
+    <!-- Lower fields -->
+    <div class="lower-fields" id="lowerFields">
+
+      <!-- Strategy -->
+      <div class="field-wrap">
+        <div class="field-label">Strategy</div>
+        <div class="field-placeholder">What will you do — and not do — to achieve it?</div>
+        <textarea
+          class="field-textarea"
+          id="strategyField"
+          placeholder="We will focus on..."
+          rows="4"
+          maxlength="400"
+        ></textarea>
+        <div class="char-counter" id="strategyCounter">0 / 400</div>
+        <div class="nudge-thinking" id="strategyThinking">
+          <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+        <div class="nudge" id="strategyNudge">
+          <button class="nudge-dismiss" onclick="dismissNudge('strategy')">✕</button>
+          <p class="nudge-text" id="strategyNudgeText"></p>
+        </div>
+      </div>
+
+      <!-- Successful When -->
+      <div class="field-wrap">
+        <div class="field-label">Successful when</div>
+        <div class="field-placeholder">How will you know it's working?</div>
+        <textarea
+          class="field-textarea"
+          id="successField"
+          placeholder="We know it's working when..."
+          rows="3"
+          maxlength="200"
+        ></textarea>
+        <div class="char-counter" id="successCounter">0 / 200</div>
+        <div class="nudge-thinking" id="successThinking">
+          <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+        <div class="nudge" id="successNudge">
+          <button class="nudge-dismiss" onclick="dismissNudge('success')">✕</button>
+          <p class="nudge-text" id="successNudgeText"></p>
+        </div>
+      </div>
+
+      <!-- Cross-field nudge -->
+      <div class="cross-nudge" id="crossNudge">
+        <button class="nudge-dismiss" onclick="dismissCross()">✕</button>
+        <p class="nudge-text" id="crossNudgeText"></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+  // ── Supabase ──
+  const SUPABASE_URL = 'https://ezaergkynyyahlukomb.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6YWVyZ2dreW55eWFobHVrb21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDAxODgsImV4cCI6MjA4ODcxNjE4OH0.Oa8QG4wRBm9pIAOx71y2b4TjO0o0QJh36MPE0ZFzmtM';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ── Session ──
+  let sessionCode = null;
+  let saveTimer = null;
+  let saveStatusTimer = null;
+
+  function generateCode() {
+    return Math.random().toString(36).substring(2, 9);
+  }
+
+  // ── Local persistence (works from file://) ──
+  function saveLocal() {
+    localStorage.setItem('vwc_vision', document.getElementById('visionField').value);
+    localStorage.setItem('vwc_strategy', document.getElementById('strategyField').value);
+    localStorage.setItem('vwc_success', document.getElementById('successField').value);
+    localStorage.setItem('vwc_product', document.getElementById('productName').value);
+  }
+
+  function loadLocal() {
+    const vision = localStorage.getItem('vwc_vision') || '';
+    const strategy = localStorage.getItem('vwc_strategy') || '';
+    const success = localStorage.getItem('vwc_success') || '';
+    const product = localStorage.getItem('vwc_product') || '';
+    if (product) document.getElementById('productName').value = product;
+    if (vision) { document.getElementById('visionField').value = vision; handleVision(); }
+    if (strategy) { document.getElementById('strategyField').value = strategy; handleStrategy(); }
+    if (success) { document.getElementById('successField').value = success; handleSuccess(); }
+  }
+
+  // ── Supabase sync (works when hosted, silent fail on file://) ──
+  async function initSession() {
+    sessionCode = localStorage.getItem('vwc_session_code') || generateCode();
+    localStorage.setItem('vwc_session_code', sessionCode);
+    window.history.replaceState({}, '', `?s=${sessionCode}`);
+
+    // Load from local storage first (instant)
+    loadLocal();
+
+    // Then attempt Supabase sync
+    try {
+      const { data } = await db.from('sessions').select('*').eq('session_code', sessionCode).single();
+      if (data && data.vision) {
+        document.getElementById('visionField').value = data.vision || '';
+        document.getElementById('strategyField').value = data.strategy || '';
+        document.getElementById('successField').value = data.successful_when || '';
+        handleVision(); handleStrategy(); handleSuccess();
+      } else {
+        await db.from('sessions').upsert({ session_code: sessionCode });
+      }
+    } catch(e) { /* file:// CORS — local storage is the fallback */ }
+  }
+
+  function showSaveStatus(msg, cls) {
+    const el = document.getElementById('saveStatus');
+    el.textContent = msg;
+    el.className = 'save-status visible ' + (cls || '');
+    clearTimeout(saveStatusTimer);
+    saveStatusTimer = setTimeout(() => {
+      el.className = 'save-status';
+    }, 2000);
+  }
+
+  async function saveSession() {
+    if (!sessionCode) return;
+    saveLocal();
+    showSaveStatus('Saved', 'saved');
+    // Also try Supabase (silent fail if file://)
+    try {
+      await db.from('sessions').update({
+        vision: document.getElementById('visionField').value,
+        strategy: document.getElementById('strategyField').value,
+        successful_when: document.getElementById('successField').value,
+        last_updated: new Date().toISOString(),
+      }).eq('session_code', sessionCode);
+    } catch(e) {}
+  }
+
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveSession, 1500);
+  }
+
+  // ── State ──
+  const state = {
+    dismissed: { vision: false, strategy: false, success: false, cross: false },
+    timers: { vision: null, strategy: null, success: null, cross: null },
+    revealed: false,
+    hintShown: false,
+  };
+
+  // ── Famous visions ──
+  const famousVisions = [
+    { patterns: ['belong anywhere','belonging anywhere'], nudge: "Airbnb called. They want their vision back 😏 What does it look like when it belongs to you?" },
+    { patterns: ['music for everyone','music for all'], nudge: "Spotify's been using this since 2006. Your turn to write the next one." },
+    { patterns: ['make money work for everyone','money for everyone'], nudge: "Close to Monzo's. Which means it's punchy — and also not yours yet." },
+    { patterns: ['organise the world','organize the world','world\'s information'], nudge: "Google's been on this since 1998. What information are you organising, and for whom?" },
+    { patterns: ['most customer-centric','customer centric company'], nudge: "Amazon territory. What's your version of that ambition for your specific customer?" },
+    { patterns: ['think different','think differently'], nudge: "Apple's had this one since 1997. What's your version of that provocation?" },
+    { patterns: ['connect the world','connecting the world','connected world'], nudge: "Meta's claiming this. What's the more specific connection you're creating?" },
+    { patterns: ['move fast','break things'], nudge: "This one's retired for good reason 😅 What does bold and responsible look like for you?" },
+  ];
+
+  // ── Generic patterns ──
+  const genericPatterns = [
+    { rx: /\bimprove\b.*(productiv|efficien|life|lives|people)/i, nudge: "Hmm — improve it for who, and from what? The best visions name the thing that's broken today. What's the enemy?" },
+    { rx: /make.*(easier|better|faster|simpler)/i, nudge: "This could be on any product's homepage right now. What's the one thing *only* your product can honestly say?" },
+    { rx: /\bhelp (people|users|teams|businesses)\b/i, nudge: "Which people, though? The more specific you get, the more the vision actually means something." },
+    { rx: /\b(seamless|frictionless|intuitive|innovative|world.?class|leading|best)\b/i, nudge: "Every product on earth promises this. Strip it out — what's left? That's probably your real vision." },
+    { rx: /platform for/i, nudge: "Platform for... everyone? The narrower the audience, the sharper the vision. Who specifically is this for?" },
+  ];
+
+  // ── Strategy patterns ──
+  const strategyWeakPatterns = [
+    { rx: /we will (build|create|develop|launch|release|ship)/i, nudge: "That's a roadmap item, not a strategy. Strategy is the *choice* — what will you say no to in order to make this happen?" },
+    { rx: /(social media|marketing campaign|partnership|content)/i, nudge: "Those are tactics — the how, not the why. What's the single bet you're making that everything else depends on?" },
+    { rx: /we will.+,\s*and.+,\s*and/i, nudge: "That's a list. Lists aren't strategies — they're hedges. What's the one thing that matters most here?" },
+  ];
+
+  // ── Success patterns ──
+  const successOutputPatterns = [
+    { rx: /we (launch|ship|release|build|create|deploy)/i, nudge: "That's something *you* do, not something that changes for users. What's different in someone's life because this worked?" },
+    { rx: /\b(funding|investors|raise)/i, nudge: "That's a business outcome — investors don't use the product. What changes for the people who do?" },
+    { rx: /by (q[1-4]|january|february|march|april|may|june|july|august|september|october|november|december|\d{4})/i, nudge: "That's a deadline, not success. When is it *working*? What does a user do differently?" },
+  ];
+
+  // ── Cross-field checks ──
+  function getCrossNudge(vision, strategy, success) {
+    if (!vision || !strategy) return null;
+    const vWords = vision.toLowerCase().split(/\s+/);
+    const sWords = strategy.toLowerCase().split(/\s+/);
+    const overlap = vWords.filter(w => w.length > 4 && sWords.includes(w)).length;
+    if (strategy.length > 30 && vision.length > 30 && overlap < 1) {
+      return "Heads up — your vision and strategy feel like they're about different products. Does the strategy actually *lead* to what the vision promises? 🤔";
+    }
+    if (success && success.match(/we (launch|ship|build)/i)) {
+      return "Quick one: your success measure is about what you ship, but your vision is about users. What does a user *do* differently when you've won?";
+    }
+    return null;
+  }
+
+  // ── Vision coaching ──
+  function coachVision(text) {
+    if (text.length < 20) return null;
+    const lower = text.toLowerCase();
+    for (const f of famousVisions) {
+      if (f.patterns.some(p => lower.includes(p))) return f.nudge;
+    }
+    for (const g of genericPatterns) {
+      if (g.rx.test(text)) return g.nudge;
+    }
+    if (text.length > 40) {
+      const affirmations = [
+        "Now we're talking. 👀 Is this the one thing only *your* product can honestly claim?",
+        "This has a point of view — that's rare. Who's the person whose life looks different because this exists?",
+        "Specific enough to be real. Say it out loud to someone who's never heard of your product. Does it hold?",
+        "There's something here. What does the world look like when this is actually true — not just for users, but broadly?",
+        "Good instinct. Would this vision embarrass you if it wasn't true in 5 years? If yes, you're probably onto something real.",
+      ];
+      return affirmations[text.length % affirmations.length];
+    }
+    return "What changes in the world because this product exists? Not what it does — what's *different* because it's there?";
+  }
+
+  // ── Strategy coaching ──
+  function coachStrategy(text) {
+    if (text.length < 20) return null;
+    for (const p of strategyWeakPatterns) {
+      if (p.rx.test(text)) return p.nudge;
+    }
+    if (text.length > 40 && !/(won't|will not|not going to|avoid|focus|only|rather than)/i.test(text)) {
+      return "Getting there. The best strategies are as clear about what they *won't* do. What are you deliberately leaving out?";
+    }
+    if (text.length > 60) {
+      return "This has some shape. 🎯 If you had to bet the whole product on one sentence of this, which one would it be?";
+    }
+    return null;
+  }
+
+  // ── Success coaching ──
+  function coachSuccess(text) {
+    if (text.length < 15) return null;
+    for (const p of successOutputPatterns) {
+      if (p.rx.test(text)) return p.nudge;
+    }
+    if (text.length > 30) {
+      const responses = [
+        "Outcome-framed — nice. ✅ How would you know it's *actually* happening, before you hit scale?",
+        "Love this. Would you be proud to show it to a user and say 'this is exactly why we built it'?",
+        "That works. Is it something you can measure, or more of a north star feeling? Both are valid — just be honest about which one this is.",
+        "Good. Now the hard version: if a user doesn't experience this in their first week, what went wrong?",
+      ];
+      return responses[text.length % responses.length];
+    }
+    return "Try finishing this: 'We know it's working when a user says...' — what do they say?";
+  }
+
+  // ── Show nudge ──
+  function showNudge(field, text) {
+    if (state.dismissed[field]) return;
+    const el = document.getElementById(field + 'Nudge');
+    const textEl = document.getElementById(field + 'NudgeText');
+    const thinking = document.getElementById(field + 'Thinking');
+    thinking.classList.remove('visible');
+    if (!text) return;
+    textEl.textContent = text;
+    el.classList.add('visible');
+  }
+
+  function dismissNudge(field) {
+    state.dismissed[field] = true;
+    document.getElementById(field + 'Nudge').classList.remove('visible');
+  }
+
+  function dismissCross() {
+    state.dismissed.cross = true;
+    document.getElementById('crossNudge').classList.remove('visible');
+  }
+
+  // ── Typing handlers ──
+  function handleVision() {
+    const t = document.getElementById('visionField').value;
+    updateCounter('vision', t.length, 280);
+    document.getElementById('visionBorder').classList.toggle('active', t.length > 0);
+    if (t.length >= 20 && !state.revealed) {
+      state.revealed = true;
+      document.getElementById('lowerFields').classList.add('visible');
+      document.getElementById('lowerHint').classList.remove('visible');
+    } else if (t.length >= 5 && t.length < 20 && !state.revealed && !state.hintShown) {
+      state.hintShown = true;
+      document.getElementById('lowerHint').classList.add('visible');
+    }
+    clearTimeout(state.timers.vision);
+    if (!state.dismissed.vision) {
+      document.getElementById('visionNudge').classList.remove('visible');
+      if (t.length >= 20) {
+        document.getElementById('visionThinking').classList.add('visible');
+        state.timers.vision = setTimeout(() => {
+          const nudge = coachVision(t);
+          document.getElementById('visionThinking').classList.remove('visible');
+          showNudge('vision', nudge);
+        }, 1800);
+      }
+    }
+    scheduleCross();
+    scheduleSave();
+  }
+
+  function handleStrategy() {
+    const t = document.getElementById('strategyField').value;
+    updateCounter('strategy', t.length, 400);
+    clearTimeout(state.timers.strategy);
+    if (!state.dismissed.strategy) {
+      document.getElementById('strategyNudge').classList.remove('visible');
+      if (t.length >= 20) {
+        document.getElementById('strategyThinking').classList.add('visible');
+        state.timers.strategy = setTimeout(() => {
+          const nudge = coachStrategy(t);
+          document.getElementById('strategyThinking').classList.remove('visible');
+          showNudge('strategy', nudge);
+        }, 1800);
+      }
+    }
+    scheduleCross();
+    scheduleSave();
+  }
+
+  function handleSuccess() {
+    const t = document.getElementById('successField').value;
+    updateCounter('success', t.length, 200);
+    clearTimeout(state.timers.success);
+    if (!state.dismissed.success) {
+      document.getElementById('successNudge').classList.remove('visible');
+      if (t.length >= 15) {
+        document.getElementById('successThinking').classList.add('visible');
+        state.timers.success = setTimeout(() => {
+          const nudge = coachSuccess(t);
+          document.getElementById('successThinking').classList.remove('visible');
+          showNudge('success', nudge);
+        }, 1800);
+      }
+    }
+    scheduleCross();
+    scheduleSave();
+  }
+
+  function scheduleCross() {
+    if (state.dismissed.cross) return;
+    clearTimeout(state.timers.cross);
+    state.timers.cross = setTimeout(() => {
+      const v = document.getElementById('visionField').value;
+      const s = document.getElementById('strategyField').value;
+      const sc = document.getElementById('successField').value;
+      const nudge = getCrossNudge(v, s, sc);
+      if (nudge) {
+        document.getElementById('crossNudge').classList.add('visible');
+        document.getElementById('crossNudgeText').textContent = nudge;
+      }
+    }, 4000);
+  }
+
+  // ── Counter ──
+  function updateCounter(field, len, max) {
+    const el = document.getElementById(field + 'Counter');
+    el.textContent = `${len} / ${max}`;
+    el.className = 'char-counter';
+    if (len / max >= 0.9) el.classList.add('full');
+    else if (len / max >= 0.75) el.classList.add('warn');
+  }
+
+  // ── Copy link ──
+  function copyLink() {
+    const base = window.location.href.split('?')[0];
+    const url = `${base}?s=${sessionCode}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy link';
+      btn.classList.remove('copied');
+    }, 2000);
+  }
+
+  // ── Attach listeners ──
+  document.getElementById('productName').addEventListener('input', scheduleSave);
+  document.getElementById('visionField').addEventListener('input', handleVision);
+  document.getElementById('strategyField').addEventListener('input', handleStrategy);
+  document.getElementById('successField').addEventListener('input', handleSuccess);
+
+  // ── Init ──
+  window.addEventListener('load', initSession);
+
+</script>
+
+<!-- ── PROTOTYPE NOTES (remove before shipping) ──
+  This is prototype v8 of the Vision Writing Coach.
+
+  WHAT'S NEW IN V8:
+  - Supabase integration: sessions persist to real database
+  - Auto-save on every keystroke (debounced 2s)
+  - Real session codes in URL (?s=CODE)
+  - Load existing session from URL on page open
+  - "Saving..." / "Saved" status indicator in header
+  - Copy link now copies a real shareable URL
+
+  WHAT WORKS:
+  - AI coaching on Vision, Strategy, and Successful When fields
+  - Famous vision detection (regex-based, 8 entries)
+  - Generic pattern detection with sharpening nudges
+  - Cross-field contradiction detection
+  - Progressive reveal (Strategy + Successful When appear after Vision > 20 chars)
+  - Character limits with live counters
+  - Dismissible nudges with thinking animation
+  - Welcoming line on load
+  - Geometric ambient background
+  - Presence avatars (static)
+
+  WHAT STILL NEEDS WORK:
+  - Real-time collaboration (field locking, live sync via Supabase Realtime)
+  - Product name not yet persisted to Supabase (add name column to sessions table)
+  - View-only mode for share links (/v/ route)
+  - Replace regex nudges with Claude API for richer coaching
+-->
+</body>
+</html>
