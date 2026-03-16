@@ -650,110 +650,38 @@
     hintShown: false,
   };
 
-  // ── Famous visions ──
-  const famousVisions = [
-    { patterns: ['belong anywhere','belonging anywhere'], nudge: "Airbnb called. They want their vision back 😏 What does it look like when it belongs to you?" },
-    { patterns: ['music for everyone','music for all'], nudge: "Spotify's been using this since 2006. Your turn to write the next one." },
-    { patterns: ['make money work for everyone','money for everyone'], nudge: "Close to Monzo's. Which means it's punchy — and also not yours yet." },
-    { patterns: ['organise the world','organize the world','world\'s information'], nudge: "Google's been on this since 1998. What information are you organising, and for whom?" },
-    { patterns: ['most customer-centric','customer centric company'], nudge: "Amazon territory. What's your version of that ambition for your specific customer?" },
-    { patterns: ['think different','think differently'], nudge: "Apple's had this one since 1997. What's your version of that provocation?" },
-    { patterns: ['connect the world','connecting the world','connected world'], nudge: "Meta's claiming this. What's the more specific connection you're creating?" },
-    { patterns: ['move fast','break things'], nudge: "This one's retired for good reason 😅 What does bold and responsible look like for you?" },
-  ];
+  // ── AI Coaching (Gemini API via Supabase Edge Function) ──
+  // Free tier: 1,500 requests/day — https://aistudio.google.com
+  const abortControllers = { vision: null, strategy: null, success: null, cross: null };
 
-  // ── Generic patterns ──
-  const genericPatterns = [
-    { rx: /\bimprove\b.*(productiv|efficien|life|lives|people)/i, nudge: "Hmm — improve it for who, and from what? The best visions name the thing that's broken today. What's the enemy?" },
-    { rx: /make.*(easier|better|faster|simpler)/i, nudge: "This could be on any product's homepage right now. What's the one thing *only* your product can honestly say?" },
-    { rx: /\bhelp (people|users|teams|businesses)\b/i, nudge: "Which people, though? The more specific you get, the more the vision actually means something." },
-    { rx: /\b(seamless|frictionless|intuitive|innovative|world.?class|leading|best)\b/i, nudge: "Every product on earth promises this. Strip it out — what's left? That's probably your real vision." },
-    { rx: /platform for/i, nudge: "Platform for... everyone? The narrower the audience, the sharper the vision. Who specifically is this for?" },
-  ];
-
-  // ── Strategy patterns ──
-  const strategyWeakPatterns = [
-    { rx: /we will (build|create|develop|launch|release|ship)/i, nudge: "That's a roadmap item, not a strategy. Strategy is the *choice* — what will you say no to in order to make this happen?" },
-    { rx: /(social media|marketing campaign|partnership|content)/i, nudge: "Those are tactics — the how, not the why. What's the single bet you're making that everything else depends on?" },
-    { rx: /we will.+,\s*and.+,\s*and/i, nudge: "That's a list. Lists aren't strategies — they're hedges. What's the one thing that matters most here?" },
-  ];
-
-  // ── Success patterns ──
-  const successOutputPatterns = [
-    { rx: /we (launch|ship|release|build|create|deploy)/i, nudge: "That's something *you* do, not something that changes for users. What's different in someone's life because this worked?" },
-    { rx: /\b(funding|investors|raise)/i, nudge: "That's a business outcome — investors don't use the product. What changes for the people who do?" },
-    { rx: /by (q[1-4]|january|february|march|april|may|june|july|august|september|october|november|december|\d{4})/i, nudge: "That's a deadline, not success. When is it *working*? What does a user do differently?" },
-  ];
-
-  // ── Cross-field checks ──
-  function getCrossNudge(vision, strategy, success) {
-    if (!vision || !strategy) return null;
-    const vWords = vision.toLowerCase().split(/\s+/);
-    const sWords = strategy.toLowerCase().split(/\s+/);
-    const overlap = vWords.filter(w => w.length > 4 && sWords.includes(w)).length;
-    if (strategy.length > 30 && vision.length > 30 && overlap < 1) {
-      return "Heads up — your vision and strategy feel like they're about different products. Does the strategy actually *lead* to what the vision promises? 🤔";
+  async function fetchNudge(field, text) {
+    if (abortControllers[field]) abortControllers[field].abort();
+    const controller = new AbortController();
+    abortControllers[field] = controller;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/coach`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({
+          field,
+          text,
+          vision: document.getElementById('visionField').value,
+          strategy: document.getElementById('strategyField').value,
+          success: document.getElementById('successField').value,
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.nudge || null;
+    } catch(e) {
+      if (e.name === 'AbortError') return null;
+      console.warn('Coaching API unavailable:', e);
+      return null;
     }
-    if (success && success.match(/we (launch|ship|build)/i)) {
-      return "Quick one: your success measure is about what you ship, but your vision is about users. What does a user *do* differently when you've won?";
-    }
-    return null;
-  }
-
-  // ── Vision coaching ──
-  function coachVision(text) {
-    if (text.length < 20) return null;
-    const lower = text.toLowerCase();
-    for (const f of famousVisions) {
-      if (f.patterns.some(p => lower.includes(p))) return f.nudge;
-    }
-    for (const g of genericPatterns) {
-      if (g.rx.test(text)) return g.nudge;
-    }
-    if (text.length > 40) {
-      const affirmations = [
-        "Now we're talking. 👀 Is this the one thing only *your* product can honestly claim?",
-        "This has a point of view — that's rare. Who's the person whose life looks different because this exists?",
-        "Specific enough to be real. Say it out loud to someone who's never heard of your product. Does it hold?",
-        "There's something here. What does the world look like when this is actually true — not just for users, but broadly?",
-        "Good instinct. Would this vision embarrass you if it wasn't true in 5 years? If yes, you're probably onto something real.",
-      ];
-      return affirmations[text.length % affirmations.length];
-    }
-    return "What changes in the world because this product exists? Not what it does — what's *different* because it's there?";
-  }
-
-  // ── Strategy coaching ──
-  function coachStrategy(text) {
-    if (text.length < 20) return null;
-    for (const p of strategyWeakPatterns) {
-      if (p.rx.test(text)) return p.nudge;
-    }
-    if (text.length > 40 && !/(won't|will not|not going to|avoid|focus|only|rather than)/i.test(text)) {
-      return "Getting there. The best strategies are as clear about what they *won't* do. What are you deliberately leaving out?";
-    }
-    if (text.length > 60) {
-      return "This has some shape. 🎯 If you had to bet the whole product on one sentence of this, which one would it be?";
-    }
-    return null;
-  }
-
-  // ── Success coaching ──
-  function coachSuccess(text) {
-    if (text.length < 15) return null;
-    for (const p of successOutputPatterns) {
-      if (p.rx.test(text)) return p.nudge;
-    }
-    if (text.length > 30) {
-      const responses = [
-        "Outcome-framed — nice. ✅ How would you know it's *actually* happening, before you hit scale?",
-        "Love this. Would you be proud to show it to a user and say 'this is exactly why we built it'?",
-        "That works. Is it something you can measure, or more of a north star feeling? Both are valid — just be honest about which one this is.",
-        "Good. Now the hard version: if a user doesn't experience this in their first week, what went wrong?",
-      ];
-      return responses[text.length % responses.length];
-    }
-    return "Try finishing this: 'We know it's working when a user says...' — what do they say?";
   }
 
   // ── Show nudge ──
@@ -796,8 +724,8 @@
       document.getElementById('visionNudge').classList.remove('visible');
       if (t.length >= 20) {
         document.getElementById('visionThinking').classList.add('visible');
-        state.timers.vision = setTimeout(() => {
-          const nudge = coachVision(t);
+        state.timers.vision = setTimeout(async () => {
+          const nudge = await fetchNudge('vision', t);
           document.getElementById('visionThinking').classList.remove('visible');
           showNudge('vision', nudge);
         }, 1800);
@@ -815,8 +743,8 @@
       document.getElementById('strategyNudge').classList.remove('visible');
       if (t.length >= 20) {
         document.getElementById('strategyThinking').classList.add('visible');
-        state.timers.strategy = setTimeout(() => {
-          const nudge = coachStrategy(t);
+        state.timers.strategy = setTimeout(async () => {
+          const nudge = await fetchNudge('strategy', t);
           document.getElementById('strategyThinking').classList.remove('visible');
           showNudge('strategy', nudge);
         }, 1800);
@@ -834,8 +762,8 @@
       document.getElementById('successNudge').classList.remove('visible');
       if (t.length >= 15) {
         document.getElementById('successThinking').classList.add('visible');
-        state.timers.success = setTimeout(() => {
-          const nudge = coachSuccess(t);
+        state.timers.success = setTimeout(async () => {
+          const nudge = await fetchNudge('success', t);
           document.getElementById('successThinking').classList.remove('visible');
           showNudge('success', nudge);
         }, 1800);
@@ -848,11 +776,11 @@
   function scheduleCross() {
     if (state.dismissed.cross) return;
     clearTimeout(state.timers.cross);
-    state.timers.cross = setTimeout(() => {
+    state.timers.cross = setTimeout(async () => {
       const v = document.getElementById('visionField').value;
       const s = document.getElementById('strategyField').value;
-      const sc = document.getElementById('successField').value;
-      const nudge = getCrossNudge(v, s, sc);
+      if (!v || !s) return;
+      const nudge = await fetchNudge('cross', '');
       if (nudge) {
         document.getElementById('crossNudge').classList.add('visible');
         document.getElementById('crossNudgeText').textContent = nudge;
@@ -921,7 +849,6 @@
   - Real-time collaboration (field locking, live sync via Supabase Realtime)
   - Product name not yet persisted to Supabase (add name column to sessions table)
   - View-only mode for share links (/v/ route)
-  - Replace regex nudges with Claude API for richer coaching
 -->
 </body>
 </html>
