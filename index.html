@@ -490,6 +490,20 @@
       font-weight: 600;
       color: #1a1a18;
     }
+    .research-vision {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0ede6;
+    }
+    .research-vision:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .research-vision-statement {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 14px;
+      font-style: italic;
+      color: #4a3a7a;
+      line-height: 1.6;
+      margin-top: 4px;
+    }
     .research-question {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 15px;
@@ -973,11 +987,20 @@
     const tales = (brief.cautionary_tales || []).map(t =>
       `<div class="research-player"><span class="research-player-name">${t.name}</span> — ${t.what_happened}</div>`
     ).join('');
+    const visions = (brief.visions || []).map(v =>
+      `<div class="research-vision"><span class="research-player-name">${v.company}</span><div class="research-vision-statement">${v.statement}</div></div>`
+    ).join('');
+    const visionsSection = visions ? `
+      <div class="research-section">
+        <div class="research-section-label">How others articulate it</div>
+        <div class="research-section-body">${visions}</div>
+      </div>` : '';
     content.innerHTML = `
       <div class="research-section">
         <div class="research-section-label">Who's in this space</div>
         <div class="research-section-body">${players}</div>
       </div>
+      ${visionsSection}
       <div class="research-section">
         <div class="research-section-label">What the market believes</div>
         <div class="research-section-body">${brief.market_belief || ''}</div>
