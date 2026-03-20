@@ -946,7 +946,11 @@
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${SUPABASE_KEY}`,
         },
-        body: JSON.stringify({ vision }),
+        body: JSON.stringify({
+          vision,
+          productName: document.getElementById('productName').value,
+          strategy: document.getElementById('strategyField').value,
+        }),
       });
       if (!res.ok) return null;
       const data = await res.json();
