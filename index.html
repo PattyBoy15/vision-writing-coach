@@ -850,7 +850,7 @@
     const t = document.getElementById('visionField').value;
     updateCounter('vision', t.length, 280);
     document.getElementById('visionBorder').classList.toggle('active', t.length > 0);
-    document.getElementById('researchBtn').classList.toggle('visible', t.length >= 50);
+    document.getElementById('researchBtn').classList.toggle('visible', t.length >= 20);
     if (t.length >= 20 && !state.revealed) {
       state.revealed = true;
       document.getElementById('lowerFields').classList.add('visible');
@@ -996,11 +996,11 @@
         <div class="research-section-body">${visions}</div>
       </div>` : '';
     content.innerHTML = `
+      ${visionsSection}
       <div class="research-section">
         <div class="research-section-label">Who's in this space</div>
         <div class="research-section-body">${players}</div>
       </div>
-      ${visionsSection}
       <div class="research-section">
         <div class="research-section-label">What the market believes</div>
         <div class="research-section-body">${brief.market_belief || ''}</div>
