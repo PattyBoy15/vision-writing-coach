@@ -728,7 +728,9 @@
 
   // ── Supabase sync (works when hosted, silent fail on file://) ──
   async function initSession() {
-    sessionCode = localStorage.getItem('vwc_session_code') || generateCode();
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlCode = urlParams.get('s');
+    sessionCode = urlCode || localStorage.getItem('vwc_session_code') || generateCode();
     localStorage.setItem('vwc_session_code', sessionCode);
     window.history.replaceState({}, '', `?s=${sessionCode}`);
 
