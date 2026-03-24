@@ -523,6 +523,113 @@
       color: #bbb;
     }
 
+    /* ── Review Button ── */
+    .review-btn {
+      display: none;
+      margin-top: 8px;
+      margin-left: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 16px;
+      border: 1px solid #b8d4c8;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      color: #2a6a50;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+    .review-btn:hover { background: #edf7f3; border-color: #80b89a; }
+    .review-btn.loading { color: #aaa; border-color: #ddd; cursor: default; }
+    .review-btn.visible { display: inline-block; }
+
+    /* ── Panel Tabs ── */
+    .panel-tabs {
+      display: flex;
+      border-bottom: 1px solid #e8e6e0;
+      margin-bottom: 20px;
+    }
+    .panel-tab {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #bbb;
+      padding: 8px 14px 10px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+    .panel-tab.active { color: #5a3a9a; border-bottom-color: #5a3a9a; }
+    .panel-tab-content { display: none; }
+    .panel-tab-content.active { display: block; }
+
+    /* ── Review Sections ── */
+    .review-headline {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      font-style: italic;
+      color: #2a2a26;
+      line-height: 1.55;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e8e6e0;
+    }
+    .review-section { margin-bottom: 20px; }
+    .review-section-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #2a6a50;
+      margin-bottom: 8px;
+    }
+    .review-section-body {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: #3a3a36;
+      line-height: 1.65;
+    }
+    .review-recommendation {
+      background: #f0faf5;
+      border: 1px solid #b8d4c8;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 20px;
+    }
+    .review-recommendation-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #2a6a50;
+      margin-bottom: 8px;
+    }
+    .review-recommendation-body {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1a4a38;
+      line-height: 1.65;
+    }
+    .review-thinking-steps {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      color: #ccc;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
   </style>
 </head>
 <body>
@@ -615,6 +722,7 @@
         <p class="nudge-text" id="visionNudgeText"></p>
       </div>
       <button class="research-btn" id="researchBtn" onclick="startResearch()">Research this space →</button>
+      <button class="review-btn" id="reviewBtn" onclick="startReview()">Coach this canvas →</button>
     </div>
 
     <!-- Progressive reveal hint -->
@@ -675,16 +783,37 @@
   </div>
 </div>
 
-<!-- ── Research Panel ── -->
+<!-- ── Research Panel (hosts both Research and Review tabs) ── -->
 <div class="research-panel" id="researchPanel">
   <div class="research-panel-header">
-    <span class="research-panel-title">Landscape Brief</span>
-    <button class="research-panel-close" onclick="closeResearch()">✕</button>
+    <span class="research-panel-title" id="panelTitle">Landscape Brief</span>
+    <button class="research-panel-close" onclick="closePanel()">✕</button>
   </div>
-  <div id="researchContent">
-    <div class="research-thinking">
-      <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-      <div class="research-thinking-label">Researching your space...</div>
+
+  <!-- Tab bar — hidden until review is first used -->
+  <div class="panel-tabs" id="panelTabs" style="display:none;">
+    <button class="panel-tab active" id="tabResearch" onclick="switchTab('research')">Research</button>
+    <button class="panel-tab" id="tabReview" onclick="switchTab('review')">Review</button>
+  </div>
+
+  <!-- Research tab content -->
+  <div class="panel-tab-content active" id="researchTabContent">
+    <div id="researchContent">
+      <div class="research-thinking">
+        <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="research-thinking-label">Researching your space...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review tab content -->
+  <div class="panel-tab-content" id="reviewTabContent">
+    <div id="reviewContent">
+      <div class="research-thinking">
+        <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="research-thinking-label">Three specialist agents are reviewing your canvas...</div>
+        <div class="review-thinking-steps">Critiquing your vision · Checking coherence · Framing market context</div>
+      </div>
     </div>
   </div>
 </div>
@@ -873,6 +1002,7 @@
         }, 1800);
       }
     }
+    updateReviewBtn();
     scheduleCross();
     scheduleSave();
   }
@@ -892,6 +1022,7 @@
         }, 1800);
       }
     }
+    updateReviewBtn();
     scheduleCross();
     scheduleSave();
   }
@@ -911,6 +1042,7 @@
         }, 1800);
       }
     }
+    updateReviewBtn();
     scheduleCross();
     scheduleSave();
   }
@@ -1036,8 +1168,113 @@
     btn.classList.remove('loading');
   }
 
-  function closeResearch() {
+  function closeResearch() { closePanel(); }
+
+  function closePanel() {
     document.getElementById('researchPanel').classList.remove('open');
+  }
+
+  // ── Panel Tab Management ──────────────────────────────────────────────────
+  let reviewHasBeenUsed = false;
+
+  function switchTab(tab) {
+    const isResearch = tab === 'research';
+    document.getElementById('tabResearch').classList.toggle('active', isResearch);
+    document.getElementById('tabReview').classList.toggle('active', !isResearch);
+    document.getElementById('researchTabContent').classList.toggle('active', isResearch);
+    document.getElementById('reviewTabContent').classList.toggle('active', !isResearch);
+    document.getElementById('panelTitle').textContent = isResearch ? 'Landscape Brief' : 'Canvas Review';
+  }
+
+  // ── Review Button Visibility ──────────────────────────────────────────────
+  function updateReviewBtn() {
+    const v = document.getElementById('visionField').value;
+    const s = document.getElementById('strategyField').value;
+    const sc = document.getElementById('successField').value;
+    const allFilled = v.length >= 20 && s.length >= 20 && sc.length >= 10;
+    document.getElementById('reviewBtn').classList.toggle('visible', allFilled);
+  }
+
+  // ── Multi-Agent Canvas Review ─────────────────────────────────────────────
+  async function fetchReview() {
+    try {
+      const res = await fetch('/api/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vision: document.getElementById('visionField').value,
+          productName: document.getElementById('productName').value,
+          strategy: document.getElementById('strategyField').value,
+          success: document.getElementById('successField').value,
+        }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.review || null;
+    } catch(e) {
+      console.warn('Review API unavailable:', e);
+      return null;
+    }
+  }
+
+  function renderReview(review) {
+    const content = document.getElementById('reviewContent');
+    if (!review) {
+      content.innerHTML = `<p style="font-family:Inter,sans-serif;font-size:13px;color:#bbb;padding:20px 0;">Couldn't generate a review — try again.</p>`;
+      return;
+    }
+    content.innerHTML = `
+      <div class="review-headline">${review.headline || ''}</div>
+      <div class="review-section">
+        <div class="review-section-label">Vision</div>
+        <div class="review-section-body">${review.vision_critique || ''}</div>
+      </div>
+      <div class="review-section">
+        <div class="review-section-label">Coherence</div>
+        <div class="review-section-body">${review.coherence_note || ''}</div>
+      </div>
+      <div class="review-section">
+        <div class="review-section-label">Market context</div>
+        <div class="review-section-body">${review.market_framing || ''}</div>
+      </div>
+      <div class="review-recommendation">
+        <div class="review-recommendation-label">Do this next</div>
+        <div class="review-recommendation-body">${review.top_recommendation || ''}</div>
+      </div>
+    `;
+  }
+
+  async function startReview() {
+    const v = document.getElementById('visionField').value;
+    const s = document.getElementById('strategyField').value;
+    const sc = document.getElementById('successField').value;
+    if (v.length < 20 || s.length < 20 || sc.length < 10) return;
+
+    const btn = document.getElementById('reviewBtn');
+    btn.textContent = 'Reviewing...';
+    btn.classList.add('loading');
+
+    // Reset review content to thinking state
+    document.getElementById('reviewContent').innerHTML = `
+      <div class="research-thinking">
+        <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="research-thinking-label">Three specialist agents are reviewing your canvas...</div>
+        <div class="review-thinking-steps">Critiquing your vision · Checking coherence · Framing market context</div>
+      </div>`;
+
+    // Show tab bar on first use, switch to review tab
+    if (!reviewHasBeenUsed) {
+      reviewHasBeenUsed = true;
+      document.getElementById('panelTabs').style.display = 'flex';
+    }
+    document.getElementById('researchPanel').classList.add('open');
+    switchTab('review');
+
+    const review = await fetchReview();
+    renderReview(review);
+
+    btn.textContent = 'Coach this canvas →';
+    btn.classList.remove('loading');
   }
 
   // ── Attach listeners ──
