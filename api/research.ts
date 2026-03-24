@@ -119,7 +119,7 @@ export default async function handler(req: any, res: any) {
 
     // The agent autonomously decides when to call the search tool and how many times.
     // This is the key difference from the old scripted pipeline.
-    const result = await agent.generate([
+    const result = await agent.generateLegacy([
       { role: "user", content: `Research the competitive landscape for this product:\n\n${context}` },
     ]);
 
