@@ -956,11 +956,10 @@
   // ── Vision Research Agent ──
   async function fetchResearch(vision) {
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/research`, {
+      const res = await fetch('/api/research', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
         },
         body: JSON.stringify({
           vision,
