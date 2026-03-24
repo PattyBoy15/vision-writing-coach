@@ -630,6 +630,66 @@
       font-style: italic;
     }
 
+    /* ── Under the Hood Panel ── */
+    .hood {
+      display: none;
+      margin-top: 48px;
+      border-radius: 10px;
+      background: #18181a;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+    .hood.visible { display: block; }
+    .hood-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px 10px;
+      border-bottom: 1px solid #2a2a2e;
+    }
+    .hood-title {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #555;
+    }
+    .hood-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #333;
+      transition: background 0.3s;
+    }
+    .hood-dot.active { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+    .hood-log {
+      padding: 14px 18px 18px;
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .hood-entry {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: #555;
+      opacity: 0;
+      animation: hoodFadeIn 0.25s ease forwards;
+    }
+    .hood-entry.trigger { color: #a78bfa; }
+    .hood-entry.info    { color: #555; padding-left: 14px; }
+    .hood-entry.tool    { color: #38bdf8; padding-left: 14px; }
+    .hood-entry.agent   { color: #94a3b8; padding-left: 14px; }
+    .hood-entry.done    { color: #4ade80; }
+    @keyframes hoodFadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
   </style>
 </head>
 <body>
@@ -780,6 +840,16 @@
       </div>
 
     </div>
+
+    <!-- ── Under the Hood ── -->
+    <div class="hood" id="hood">
+      <div class="hood-header">
+        <span class="hood-title">Under the hood</span>
+        <div class="hood-dot" id="hoodDot"></div>
+      </div>
+      <div class="hood-log" id="hoodLog"></div>
+    </div>
+
   </div>
 </div>
 
@@ -996,9 +1066,11 @@
       if (t.length >= 20) {
         document.getElementById('visionThinking').classList.add('visible');
         state.timers.vision = setTimeout(async () => {
+          hoodNudge('vision');
           const nudge = await fetchNudge('vision', t);
           document.getElementById('visionThinking').classList.remove('visible');
           showNudge('vision', nudge);
+          if (nudge) { hoodLog('✓ Nudge ready', 'done'); hoodDone(); }
         }, 1800);
       }
     }
@@ -1016,9 +1088,11 @@
       if (t.length >= 20) {
         document.getElementById('strategyThinking').classList.add('visible');
         state.timers.strategy = setTimeout(async () => {
+          hoodNudge('strategy');
           const nudge = await fetchNudge('strategy', t);
           document.getElementById('strategyThinking').classList.remove('visible');
           showNudge('strategy', nudge);
+          if (nudge) { hoodLog('✓ Nudge ready', 'done'); hoodDone(); }
         }, 1800);
       }
     }
@@ -1036,9 +1110,11 @@
       if (t.length >= 15) {
         document.getElementById('successThinking').classList.add('visible');
         state.timers.success = setTimeout(async () => {
+          hoodNudge('success');
           const nudge = await fetchNudge('success', t);
           document.getElementById('successThinking').classList.remove('visible');
           showNudge('success', nudge);
+          if (nudge) { hoodLog('✓ Nudge ready', 'done'); hoodDone(); }
         }, 1800);
       }
     }
@@ -1155,15 +1231,17 @@
     const btn = document.getElementById('researchBtn');
     btn.textContent = 'Researching...';
     btn.classList.add('loading');
-    // Reset panel to thinking state
     document.getElementById('researchContent').innerHTML = `
       <div class="research-thinking">
         <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
         <div class="research-thinking-label">Researching your space...</div>
       </div>`;
     document.getElementById('researchPanel').classList.add('open');
+    hoodResearch();
     const brief = await fetchResearch(vision);
     renderBrief(brief);
+    hoodLog('✓ Landscape Brief ready', 'done');
+    hoodDone();
     btn.textContent = 'Research this space →';
     btn.classList.remove('loading');
   }
@@ -1269,12 +1347,91 @@
     }
     document.getElementById('researchPanel').classList.add('open');
     switchTab('review');
+    hoodReview();
 
     const review = await fetchReview();
     renderReview(review);
+    hoodLog('✓ Canvas Review ready', 'done');
+    hoodDone();
 
     btn.textContent = 'Coach this canvas →';
     btn.classList.remove('loading');
+  }
+
+  // ── Under the Hood ───────────────────────────────────────────────────────
+  let hoodTimers = [];
+
+  function hoodShow() {
+    document.getElementById('hood').classList.add('visible');
+    document.getElementById('hoodDot').classList.add('active');
+  }
+
+  function hoodDone() {
+    document.getElementById('hoodDot').classList.remove('active');
+  }
+
+  function hoodClear() {
+    hoodTimers.forEach(clearTimeout);
+    hoodTimers = [];
+    document.getElementById('hoodLog').innerHTML = '';
+    document.getElementById('hoodDot').classList.remove('active');
+  }
+
+  function hoodLog(text, type = 'info', delay = 0) {
+    const t = setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = `hood-entry ${type}`;
+      el.textContent = text;
+      const log = document.getElementById('hoodLog');
+      log.appendChild(el);
+      log.scrollTop = log.scrollHeight;
+    }, delay);
+    hoodTimers.push(t);
+  }
+
+  function hoodNudge(field) {
+    hoodShow();
+    hoodClear();
+    const fieldName = { vision: 'Vision', strategy: 'Strategy', success: 'Successful When', cross: 'Cross-field coherence' }[field] || field;
+    hoodLog(`▶ Coaching Agent — ${fieldName} field`, 'trigger');
+    hoodLog('Runtime: Supabase Edge Functions (Deno)', 'info', 100);
+    hoodLog('Model: llama-3.1-8b-instant via Groq', 'info', 180);
+    hoodLog('Pattern: single LLM call with field-specific prompt', 'info', 260);
+    if (field === 'cross') {
+      hoodLog('Checking coherence across vision → strategy → success...', 'agent', 400);
+    } else {
+      hoodLog(`Analysing for: hollow language, specificity, borrowed visions...`, 'agent', 400);
+    }
+  }
+
+  function hoodResearch() {
+    hoodShow();
+    hoodClear();
+    hoodLog('▶ Vision Research Agent started', 'trigger');
+    hoodLog('Framework: Mastra  ·  Runtime: Vercel Functions (Node.js)', 'info', 120);
+    hoodLog('Model: llama-3.1-8b-instant via Groq', 'info', 220);
+    hoodLog('Pattern: single agent with Tavily search tool (autonomous loop)', 'info', 320);
+    hoodLog('Agent deciding what to search based on vision + strategy context...', 'agent', 600);
+    hoodLog('🔍 Tavily Search Tool — call 1 of 3', 'tool', 2800);
+    hoodLog('🔍 Tavily Search Tool — call 2 of 3', 'tool', 6000);
+    hoodLog('🔍 Tavily Search Tool — call 3 of 3', 'tool', 9500);
+    hoodLog('Agent synthesising search results into landscape brief...', 'agent', 12000);
+  }
+
+  function hoodReview() {
+    hoodShow();
+    hoodClear();
+    hoodLog('▶ Multi-Agent Canvas Review started', 'trigger');
+    hoodLog('Framework: Mastra  ·  Runtime: Vercel Functions (Node.js)', 'info', 120);
+    hoodLog('Model: llama-3.1-8b-instant via Groq  ·  4 agents total', 'info', 220);
+    hoodLog('Pattern: 3 specialists in parallel → orchestrator synthesises', 'info', 320);
+    hoodLog('Firing Promise.all() — 3 agents running simultaneously...', 'agent', 600);
+    hoodLog('↳ Vision Critic Agent — assessing specificity, POV, ambition, beneficiary', 'agent', 900);
+    hoodLog('↳ Coherence Agent — checking vision → strategy → success chain', 'agent', 1100);
+    hoodLog('↳ Market Context Agent — framing market assumption (training knowledge, no search)', 'agent', 1300);
+    hoodLog('Waiting for all 3 specialists to resolve...', 'info', 2500);
+    hoodLog('✓ All specialists complete — handing outputs to Orchestrator Agent', 'done', 9000);
+    hoodLog('Orchestrator synthesising: finding the through-line across all 3 reports...', 'agent', 9300);
   }
 
   // ── Attach listeners ──
