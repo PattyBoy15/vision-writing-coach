@@ -1,9 +1,3 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Authorization, Content-Type, apikey, x-client-info",
-};
-
 function buildPrompt(
   field: string,
   text: string,
@@ -11,7 +5,7 @@ function buildPrompt(
   strategy: string,
   success: string
 ): string {
-  if (field === "vision") {
+  if (field === 'vision') {
     return `You are a product vision writing coach helping a Product Manager sharpen their product vision. Analyse this vision statement and respond with a single coaching nudge — one or two sentences only.
 
 Your priority order for nudges — work through these in order and use the first that applies:
@@ -30,10 +24,10 @@ Important: Rule 3 should be used rarely. Thematic similarity, industry overlap, 
 
 Vision: "${text}"
 
-Return only the nudge text. No preamble, no sign-off. Use "you" not "the PM". Be direct. A little wit is welcome.`;
+Return only the nudge text. No preamble, no sign-off. Use "you" not "the PM". Be direct. A little wit is welcome.`
   }
 
-  if (field === "strategy") {
+  if (field === 'strategy') {
     return `You are a product strategy coach. Analyse this strategy statement and return a single coaching nudge — one or two sentences only.
 
 - If it reads like a to-do list or roadmap ("we will build X, launch Y, develop Z") — say so and ask what choice they're actually making.
@@ -41,12 +35,12 @@ Return only the nudge text. No preamble, no sign-off. Use "you" not "the PM". Be
 - If it doesn't say what they won't do — ask what they're deliberately leaving out.
 - If it has real strategic clarity — affirm it and push for the single most important sentence.
 
-Strategy: "${text}"${vision ? `\nContext — their vision: "${vision}"` : ""}
+Strategy: "${text}"${vision ? `\nContext — their vision: "${vision}"` : ''}
 
-Return only the nudge text. No preamble. Use "you". Be direct.`;
+Return only the nudge text. No preamble. Use "you". Be direct.`
   }
 
-  if (field === "success") {
+  if (field === 'success') {
     return `You are a product outcomes coach. Analyse this success criteria and return a single coaching nudge — one or two sentences only.
 
 - If it describes what the team ships rather than what users experience ("we launch X", "we release Y") — redirect to user outcomes.
@@ -54,13 +48,13 @@ Return only the nudge text. No preamble. Use "you". Be direct.`;
 - If it's a deadline not an outcome — say so and ask what success actually looks like.
 - If it's outcome-framed — affirm it and ask how they'd know it's working before hitting scale.
 
-Success criteria: "${text}"${vision ? `\nContext — their vision: "${vision}"` : ""}
+Success criteria: "${text}"${vision ? `\nContext — their vision: "${vision}"` : ''}
 
-Return only the nudge text. No preamble. Use "you". Be direct.`;
+Return only the nudge text. No preamble. Use "you". Be direct.`
   }
 
-  if (field === "cross") {
-    if (!vision || !strategy) return "";
+  if (field === 'cross') {
+    if (!vision || !strategy) return ''
     return `You are a product strategy coach doing a quick coherence check across three fields.
 
 Vision: "${vision}"
@@ -70,76 +64,61 @@ Successful when: "${success}"
 Do these three cohere? Does the strategy actually lead to what the vision promises? Does the success measure reflect the vision?
 
 If they cohere well, return exactly: COHERENT
-If there is a genuine gap, return a single honest nudge of one or two sentences pointing to the specific gap. Be direct. No hedging. No bullet points.`;
+If there is a genuine gap, return a single honest nudge of one or two sentences pointing to the specific gap. Be direct. No hedging. No bullet points.`
   }
 
-  return "";
+  return ''
 }
 
-Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
-  }
-
+export async function POST(req: Request) {
   try {
-    const { field, text, vision = "", strategy = "", success = "" } = await req.json();
+    const { field, text, vision = '', strategy = '', success = '' } = await req.json()
 
     if (!field) {
-      return new Response(JSON.stringify({ nudge: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return Response.json({ nudge: null })
     }
 
-    const prompt = buildPrompt(field, text || "", vision, strategy, success);
-
+    const prompt = buildPrompt(field, text || '', vision, strategy, success)
     if (!prompt) {
-      return new Response(JSON.stringify({ nudge: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return Response.json({ nudge: null })
     }
 
-    const groqKey = Deno.env.get("GEMINI_API_KEY"); // stored under old key name
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
+    const groqKey = process.env.GROQ_API_KEY
+    if (!groqKey) {
+      console.error('GROQ_API_KEY not set')
+      return Response.json({ nudge: null })
+    }
+
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${groqKey}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${groqKey}`,
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [{ role: "user", content: prompt }],
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
         max_tokens: 150,
         temperature: 0.7,
       }),
-    });
+    })
 
     if (!groqRes.ok) {
-      const err = await groqRes.json();
-      console.error("Groq API error:", err);
-      return new Response(JSON.stringify({ nudge: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const err = await groqRes.json()
+      console.error('Groq API error:', err)
+      return Response.json({ nudge: null })
     }
 
-    const groqData = await groqRes.json();
-    let nudge = groqData.choices?.[0]?.message?.content?.trim() || null;
+    const groqData = await groqRes.json()
+    let nudge: string | null = groqData.choices?.[0]?.message?.content?.trim() || null
 
-    if (field === "cross" && nudge === "COHERENT") {
-      nudge = null;
+    if (field === 'cross' && nudge === 'COHERENT') {
+      nudge = null
     }
 
-    return new Response(JSON.stringify({ nudge }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return Response.json({ nudge })
   } catch (err) {
-    console.error("Coach function error:", err);
-    return new Response(JSON.stringify({ error: "Internal error", nudge: null }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error('Coach route error:', err)
+    return Response.json({ error: 'Internal error', nudge: null }, { status: 500 })
   }
-});
+}
